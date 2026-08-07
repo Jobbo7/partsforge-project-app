@@ -13,6 +13,14 @@ jobs:
       - name: Checkout Source Code Repository
         uses: actions/checkout@v4
 
+      - name: Auto-Locate Nested package.json Directory
+        id: locate-project
+        run: |
+          # Recursively finds the true directory housing the bolt.new code structure
+          TARGET_PATH=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
+          echo "Discovered project path: $TARGET_PATH"
+          echo "PROJECT_DIR=$TARGET_PATH" >> $GITHUB_ENV
+
       - name: Setup Node.js Build Environment
         uses: actions/setup-node@v4
         with:
@@ -20,18 +28,18 @@ jobs:
 
       - name: Install Dependencies & Bundle Web Assets
         run: |
-          cd $GITHUB_WORKSPACE
+          cd ${{ env.PROJECT_DIR }}
           npm install
           npm run build
 
       - name: Generate Local Mobile Directory Path
         run: |
-          cd $GITHUB_WORKSPACE
+          cd ${{ env.PROJECT_DIR }}
           mkdir -p android/app/src/main
 
       - name: Create Production Android Manifest
         run: |
-          cd $GITHUB_WORKSPACE
+          cd ${{ env.PROJECT_DIR }}
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
@@ -66,7 +74,7 @@ jobs:
 
       - name: Inject Android Project Configuration Blueprint
         run: |
-          cd $GITHUB_WORKSPACE
+          cd ${{ env.PROJECT_DIR }}
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.partsforge.app",
@@ -77,14 +85,14 @@ jobs:
 
       - name: Initialize Capacitor Platform Assemblies
         run: |
-          cd $GITHUB_WORKSPACE
+          cd ${{ env.PROJECT_DIR }}
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap add android || true
           npx cap sync android
 
       - name: Compile Official Android App Bundle (.aab)
         run: |
-          cd $GITHUB_WORKSPACE
+          cd ${{ env.PROJECT_DIR }}
           if [ -d "android" ]; then
             cd android && ./gradlew bundleRelease
           else
