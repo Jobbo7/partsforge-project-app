@@ -13,14 +13,6 @@ jobs:
       - name: Checkout Source Code Repository
         uses: actions/checkout@v4
 
-      - name: Locate package.json Subfolder
-        id: find-dir
-        run: |
-          # Automatically scans the directory tree to find where bolt.new nested the package files
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          echo "Found package.json in directory: $TARGET_DIR"
-          echo "SUBDIR=$TARGET_DIR" >> $GITHUB_ENV
-
       - name: Setup Node.js Build Environment
         uses: actions/setup-node@v4
         with:
@@ -28,18 +20,18 @@ jobs:
 
       - name: Install Dependencies & Bundle Web Assets
         run: |
-          cd ${{ env.SUBDIR }}
+          cd $GITHUB_WORKSPACE
           npm install
           npm run build
 
       - name: Generate Local Mobile Directory Path
         run: |
-          cd ${{ env.SUBDIR }}
+          cd $GITHUB_WORKSPACE
           mkdir -p android/app/src/main
 
       - name: Create Production Android Manifest
         run: |
-          cd ${{ env.SUBDIR }}
+          cd $GITHUB_WORKSPACE
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
@@ -74,7 +66,7 @@ jobs:
 
       - name: Inject Android Project Configuration Blueprint
         run: |
-          cd ${{ env.SUBDIR }}
+          cd $GITHUB_WORKSPACE
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.partsforge.app",
@@ -85,14 +77,14 @@ jobs:
 
       - name: Initialize Capacitor Platform Assemblies
         run: |
-          cd ${{ env.SUBDIR }}
+          cd $GITHUB_WORKSPACE
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap add android || true
           npx cap sync android
 
       - name: Compile Official Android App Bundle (.aab)
         run: |
-          cd ${{ env.SUBDIR }}
+          cd $GITHUB_WORKSPACE
           if [ -d "android" ]; then
             cd android && ./gradlew bundleRelease
           else
