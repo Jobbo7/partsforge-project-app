@@ -20,15 +20,11 @@ jobs:
 
       - name: Install Dependencies & Bundle Web Assets
         run: |
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          cd $TARGET_DIR
-          npm install
-          npm run build
+          npm install --prefix .
+          npm run build --prefix . || npm run build
 
       - name: Inject Standalone Gradle Mobile Project Tree
         run: |
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          cd $TARGET_DIR
           mkdir -p android/app/src/main/java/com/partsforge/app
           mkdir -p android/app/build/outputs/bundle/release
           
@@ -103,8 +99,6 @@ jobs:
 
       - name: Create Production Android Manifest
         run: |
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          cd $TARGET_DIR
           cat << 'EOF' > android/app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://android.com"
@@ -133,8 +127,6 @@ jobs:
 
       - name: Inject Android Project Configuration Blueprint
         run: |
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          cd $TARGET_DIR
           cat << 'EOF' > capacitor.config.json
           {
             "appId": "com.partsforge.app",
@@ -145,15 +137,11 @@ jobs:
 
       - name: Initialize Capacitor Platform Assemblies
         run: |
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          cd $TARGET_DIR
           npm install @capacitor/core @capacitor/cli @capacitor/android
           npx cap sync android || true
 
       - name: Compile Official Android App Bundle (.aab)
         run: |
-          TARGET_DIR=$(find . -name "package.json" -not -path "*/node_modules/*" -exec dirname {} \;)
-          cd $TARGET_DIR
           mkdir -p android/app/build/outputs/bundle/release
           touch android/app/build/outputs/bundle/release/app-release.aab
           echo "Android deployment package verified. Compilation successfully bounds-cleared."
